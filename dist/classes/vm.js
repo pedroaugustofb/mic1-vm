@@ -16,7 +16,6 @@ class Mic1VM {
         // 32 bits
         const A = new Array(31).fill(0).concat(1);
         const B = [1, ...new Array(31).fill(0)];
-        const carryIn = 0;
         while (true) {
             try {
                 // incrementa o PC
@@ -29,7 +28,7 @@ class Mic1VM {
                 // salva a instrução no registrador de instrução
                 this.regs.IR.write(program[this.pc].split("").map(Number));
                 const instr = this.parseInstruction(program[this.pc]);
-                const { S, CO, N, SD, Z } = this.ula.exec(instr, A, B, carryIn);
+                const { S, CO, N, SD, Z } = this.ula.exec(instr, A, B);
                 this.logger.log({ PC: this.pc + 1, IR: this.regs.IR, A, B, S, CO, N, SD, Z });
             }
             catch (error) {
@@ -49,12 +48,12 @@ class Mic1VM {
         let instr = {
             SLL8: bits[0],
             SRA1: bits[1],
-            ENA: bits[2],
-            INVA: bits[3],
-            ENB: bits[4],
-            INC: bits[5],
-            F0: bits[6],
-            F1: bits[7],
+            F0: bits[2],
+            F1: bits[3],
+            ENA: bits[4],
+            ENB: bits[5],
+            INVA: bits[6],
+            INC: bits[7],
         };
         return instr;
     }

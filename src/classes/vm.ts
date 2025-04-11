@@ -57,12 +57,12 @@ export default class Mic1VM {
     let instr: Instruction = {
       SLL8: bits[0],
       SRA1: bits[1],
-      ENA: bits[2],
-      INVA: bits[3],
-      ENB: bits[4],
-      INC: bits[5],
-      F0: bits[6],
-      F1: bits[7],
+      F0: bits[2],
+      F1: bits[3],
+      ENA: bits[4],
+      ENB: bits[5],
+      INVA: bits[6],
+      INC: bits[7],
     };
 
     return instr;

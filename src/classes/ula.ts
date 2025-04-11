@@ -95,18 +95,13 @@ export class ULA32 {
     }
 
     let S: Bit[] = Array(32).fill(0) as Bit[];
-    let carryIn = 0 as Bit;
+    let carry = 0 as Bit;
 
-    for (let i = 31; i >= 0; i--) {
-      const result = this.ula1bit.exec(instr, A[i], B[i], carryIn);
+    for (let i = 0; i < 32; i++) {
+      const result = this.ula1bit.exec(instr, A[i], B[i], carry);
       S[i] = result.S;
-      carryIn = result.carryOut;
+      carry = result.carryOut;
     }
-
-    // Verifica se o resultado é zero
-    const Z = S.every((bit) => bit === 0) ? 1 : 0;
-    // Verifica se o resultado é negativo (bit mais significativo)
-    const N = S[0] === 1 ? 1 : 0;
 
     let SD = S;
 
@@ -118,12 +113,17 @@ export class ULA32 {
       SD = this.rightShift(S);
     }
 
-    return { S, SD, Z, N, CO: carryIn };
+    // Verifica se o resultado é zero
+    const Z = SD.every((bit) => bit === 0) ? 1 : 0;
+    // Verifica se o resultado é negativo (bit mais significativo)
+    const N = SD[31] === 1 ? 1 : 0;
+
+    return { S, SD, Z, N, CO: carry };
   }
 
   private leftShift(S: Bit[]): Bit[] {
     // Retorna os 24 bits mais significativos e adiciona 8 bits 0 no final
-    return [...S.slice(0, 24), ...Array(8).fill(0)];
+    return [...S.slice(8, 32), ...Array(8).fill(0)];
   }
   private rightShift(S: Bit[]): Bit[] {
     // deslocamento aritmético para a direita de 1 bit

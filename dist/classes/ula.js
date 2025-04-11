@@ -49,12 +49,6 @@ class ULA {
         else
             return ULAOperations.ADD;
     }
-    leftShift(s) {
-        return (s << 8);
-    }
-    rightShift(s) {
-        return (s >> 1);
-    }
     and(a, b) {
         return (a & b);
     }
@@ -76,7 +70,7 @@ class ULA32 {
     constructor() {
         this.ula1bit = new ULA();
     }
-    exec(instr, A, B, Cin = 0) {
+    exec(instr, A, B) {
         if (A.length !== 32 || B.length !== 32) {
             throw new Error("invalid size of A or B");
         }
@@ -84,16 +78,12 @@ class ULA32 {
             throw new Error("invalid control signals.");
         }
         let S = Array(32).fill(0);
-        let carryIn = Cin;
-        for (let i = 31; i >= 0; i--) {
-            const result = this.ula1bit.exec(instr, A[i], B[i], carryIn);
+        let carry = 0;
+        for (let i = 0; i < 32; i++) {
+            const result = this.ula1bit.exec(instr, A[i], B[i], carry);
             S[i] = result.S;
-            carryIn = result.carryOut;
+            carry = result.carryOut;
         }
-        // Verifica se o resultado é zero
-        const Z = S.every((bit) => bit === 0) ? 1 : 0;
-        // Verifica se o resultado é negativo (bit mais significativo)
-        const N = S[0] === 1 ? 1 : 0;
         let SD = S;
         if (instr.SLL8) {
             SD = this.leftShift(S);
@@ -101,11 +91,15 @@ class ULA32 {
         if (instr.SRA1) {
             SD = this.rightShift(S);
         }
-        return { S, SD, Z, N, CO: carryIn };
+        // Verifica se o resultado é zero
+        const Z = SD.every((bit) => bit === 0) ? 1 : 0;
+        // Verifica se o resultado é negativo (bit mais significativo)
+        const N = SD[31] === 1 ? 1 : 0;
+        return { S, SD, Z, N, CO: carry };
     }
     leftShift(S) {
         // Retorna os 24 bits mais significativos e adiciona 8 bits 0 no final
-        return [...S.slice(0, 24), ...Array(8).fill(0)];
+        return [...S.slice(8, 32), ...Array(8).fill(0)];
     }
     rightShift(S) {
         // deslocamento aritmético para a direita de 1 bit
