@@ -65,10 +65,16 @@ export class ULA {
   }
 
   private add(a: Bit, b: Bit, inc: Bit, carryIn: Bit): { S: Bit; carryOut: Bit } {
-    const sum = a + b + inc + carryIn;
-    const S = (sum % 2) as Bit;
-    const carryOut = sum > 1 ? 1 : 0;
-    return { S, carryOut };
+    // Se INC está ativo, B é forçado a 1, ignorando o valor real de B
+    const realB = inc ? 1 : b;
+
+    // Soma: A + realB + carryIn
+    const sum = a ^ realB ^ carryIn; // XOR para resultado do bit
+    const carryOut = (a & realB) | (a & carryIn) | (realB & carryIn); // lógica de carry do full adder
+
+    console.log(`a: ${a}, b: ${b}, inc: ${inc}, carryIn: ${carryIn} => sum: ${sum}, carryOut: ${carryOut}`);
+
+    return { S: sum as Bit, carryOut: carryOut as Bit }; // retorna o resultado e o carry out
   }
 }
 
@@ -96,6 +102,8 @@ export class ULA32 {
 
     let S: Bit[] = Array(32).fill(0) as Bit[];
     let carry = 0 as Bit;
+
+    console.log(instr);
 
     for (let i = 0; i < 32; i++) {
       const result = this.ula1bit.exec(instr, A[i], B[i], carry);

@@ -39,11 +39,36 @@ class Logger {
     constructor() {
         this.file = fs.createWriteStream("log.txt", { flags: "a" });
     }
-    log({ PC, IR, A, B, S, SD, CO, N, Z }) {
-        this.file.write(`=========================\nPC=${PC}\nIR=${IR.read().join("")}\nA=${A.join("")}\nB=${B.join("")}\nS=${S.join("")}\nSD=${SD.join("")}\nCO=${CO}\nN=${N}\nZ=${Z}\n\n`);
+    log(data) {
+        this.file.write(`=========================\n`);
+        this.file.write(`Cycle: ${data.cycle}\n`);
+        this.file.write(`IR: ${data.ir.ula_control.join("")} ${data.ir.bus_c_control.join("")} ${data.ir.bus_b_control.join("")}\n\n`);
+        this.file.write(`Bus B: ${data.b_bus}\n`);
+        this.file.write(`Bus C: ${data.c_bus.join(", ")}\n\n`);
+        this.file.write(`> Registers before instruction:\n`);
+        this.logRegisters(data.before_regs);
+        this.file.write(`> Registers after instruction:\n`);
+        this.logRegisters(data.after_regs);
+    }
+    logRegisters(regs) {
+        this.file.write(`MAR: ${regs.MAR.join("")}\n`);
+        this.file.write(`MDR: ${regs.MDR.join("")}\n`);
+        this.file.write(`PC: ${regs.PC.join("")}\n`);
+        this.file.write(`MBR: ${regs.MBR.join("")}\n`);
+        this.file.write(`SP: ${regs.SP.join("")}\n`);
+        this.file.write(`LV: ${regs.LV.join("")}\n`);
+        this.file.write(`CPP: ${regs.CPP.join("")}\n`);
+        this.file.write(`TOS: ${regs.TOS.join("")}\n`);
+        this.file.write(`OPC: ${regs.OPC.join("")}\n`);
+        this.file.write(`H: ${regs.H.join("")}\n\n`);
+    }
+    freeLog(line) {
+        this.file.write(`${line}\n`);
     }
     empty({ PC }) {
-        this.file.write(`=========================\nPC=${PC} empty cycle.\n\n`);
+        this.file.write(`=========================\n`);
+        this.file.write(`Cycle: ${PC}\n`);
+        this.file.write(`No more lines, EOP.`);
     }
     error({ message, PC, IR }) {
         this.file.write(`=========================\nPC=${PC} IR=${IR.read().join("")} Error, ${message}\n\n`);

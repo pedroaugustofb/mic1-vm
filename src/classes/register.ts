@@ -2,15 +2,24 @@ import { Bit } from "../types/bit";
 
 export class Register {
   private value: Bit[];
+  private label: string;
 
-  constructor(size: number, initialValue?: Bit[]) {
+  constructor(size: number, label: string, initialValue?: Bit[]) {
     this.value = new Array(size).fill(0);
+    this.label = label;
 
-    if (initialValue) {
-      for (let i = 0; i < Math.min(size, initialValue.length); i++) {
-        this.value[i] = initialValue[i];
-      }
+    if (!initialValue) return;
+
+    if (initialValue.length > size) {
+      throw new Error("initial value exceeds register size");
     }
+    for (let i = 0; i < initialValue.length; i++) {
+      this.value[i] = initialValue[i];
+    }
+  }
+
+  getLabel(): string {
+    return this.label;
   }
 
   read(): Bit[] {

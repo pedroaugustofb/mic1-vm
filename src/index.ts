@@ -7,7 +7,7 @@ enum Etapa {
   ETAPA3 = 3,
 }
 
-const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2.txt"];
+const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2-1.txt", "./test/programa_etapa2-2.txt"];
 
 function main() {
   // deve vir como flag na linha de comando
@@ -38,8 +38,6 @@ function main() {
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
-
-  let output: string[] = [];
 
   const VM = new Mic1VM();
 

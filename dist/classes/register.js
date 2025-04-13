@@ -2,13 +2,20 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Register = void 0;
 class Register {
-    constructor(size, initialValue) {
+    constructor(size, label, initialValue) {
         this.value = new Array(size).fill(0);
-        if (initialValue) {
-            for (let i = 0; i < Math.min(size, initialValue.length); i++) {
-                this.value[i] = initialValue[i];
-            }
+        this.label = label;
+        if (!initialValue)
+            return;
+        if (initialValue.length > size) {
+            throw new Error("initial value exceeds register size");
         }
+        for (let i = 0; i < initialValue.length; i++) {
+            this.value[i] = initialValue[i];
+        }
+    }
+    getLabel() {
+        return this.label;
     }
     read() {
         return [...this.value];

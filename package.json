@@ -6,7 +6,8 @@
     "build": "tsc",
     "etapa-1": "node dist/index.js 1",
     "dev-1": "tsc && node dist/index.js 1",
-    "dev-2": "tsc && node dist/index.js 2"
+    "dev-2.1": "tsc && node dist/index.js 2",
+    "dev-2.2": "tsc && node dist/index.js 3"
   },
   "keywords": [],
   "author": "",

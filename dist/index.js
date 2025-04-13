@@ -44,7 +44,7 @@ var Etapa;
     Etapa[Etapa["ETAPA2"] = 2] = "ETAPA2";
     Etapa[Etapa["ETAPA3"] = 3] = "ETAPA3";
 })(Etapa || (Etapa = {}));
-const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2.txt"];
+const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2-1.txt", "./test/programa_etapa2-2.txt"];
 function main() {
     // deve vir como flag na linha de comando
     const etapa = process.argv[2];
@@ -68,7 +68,6 @@ function main() {
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
-    let output = [];
     const VM = new vm_1.default();
     VM.run(program);
 }
