@@ -72,8 +72,6 @@ export class ULA {
     const sum = a ^ realB ^ carryIn; // XOR para resultado do bit
     const carryOut = (a & realB) | (a & carryIn) | (realB & carryIn); // lógica de carry do full adder
 
-    console.log(`a: ${a}, b: ${b}, inc: ${inc}, carryIn: ${carryIn} => sum: ${sum}, carryOut: ${carryOut}`);
-
     return { S: sum as Bit, carryOut: carryOut as Bit }; // retorna o resultado e o carry out
   }
 }
