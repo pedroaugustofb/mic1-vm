@@ -101,8 +101,6 @@ export class ULA32 {
     let S: Bit[] = Array(32).fill(0) as Bit[];
     let carry = 0 as Bit;
 
-    console.log(instr);
-
     for (let i = 0; i < 32; i++) {
       const result = this.ula1bit.exec(instr, A[i], B[i], carry);
       S[i] = result.S;

@@ -1,9 +1,12 @@
 import { Bit } from "../types/bit";
 import { BusBRegisters } from "../types/busBRegisters";
 import { Instruction } from "../types/instruction";
+import { Memo } from "../types/memory";
+import { Registers } from "../types/registers";
 import { ResponseULARegisters } from "../types/responseUlaRegisters";
 import { Decoder4 } from "./decoder";
 import { LogData, Logger } from "./logger";
+import { Memory } from "./memory";
 import { Register } from "./register";
 import { Selector9 } from "./selector";
 import { ULA32 } from "./ula";
@@ -13,36 +16,36 @@ export default class Mic1VM {
   private ula = new ULA32();
   private decoder = new Decoder4();
   private selector = new Selector9();
-  private regs = {
-    IR: new Register(21, "IR"), // Instruction Register
-    H: new Register(
-      32,
-      "H",
-      Array(31).fill(0).concat([1]) // Hold Register
-    ),
+  private memory = new Memory();
+  private regs: Registers = {
+    IR: new Register(23, "IR"), // Instruction Register
+    H: new Register(32, "H"), // Hold Register
     OPC: new Register(32, "OPC"), // Old Program Counter Register
-    TOS: new Register(
-      32,
-      "TOS",
-      Array(30).fill(0).concat([1, 0]) // Top of Stack Register
-    ),
+    TOS: new Register(32, "TOS"), // Top of Stack Register
     CPP: new Register(32, "CPP"), // Constant Pool Pointer Register
     LV: new Register(32, "LV"), // Local Variable Register
-    SP: new Register(32, "SP"), // Stack Pointer Register
+    SP: new Register(
+      32,
+      "SP",
+      "00000000000000000000000000000100".split("").map((bit) => parseInt(bit) as Bit)
+    ), // Stack Pointer Register
     PC: new Register(32, "PC"), // Program Counter Register
     MDR: new Register(32, "MDR"), // Memory Data Register
-    MAR: new Register(32, "MAR"), // Memory Address Register
-    MBR: new Register(
-      8,
-      "MBR",
-      [1, ...Array(6).fill(0), 1] // Memory Buffer Register
-    ), // Memory Buffer Register
+    MAR: new Register(
+      32,
+      "MAR",
+      "00000000000000000000000000000100".split("").map((bit) => parseInt(bit) as Bit)
+    ), // Memory Address Register
+    MBR: new Register(8, "MBR"), // Memory Buffer Register
   };
 
   private logger = new Logger();
 
-  run(program: string[]) {
+  async run(program: string[]) {
+    await this.memory.setup(program);
     this.logger.freeLog("=====================================================");
+    this.logger.freeLog("> Initial memory states");
+    this.logger.logMemory(this.memory.get_memory_state());
     this.logger.freeLog("> Initial register states");
     this.logger.logRegisters(this.getRegistersValue());
     this.logger.freeLog("=====================================================");
@@ -61,13 +64,15 @@ export default class Mic1VM {
         // verifica se o PC está dentro do tamanho do programa
         if (this.pc >= program.length) {
           this.logger.empty({ PC: this.pc + 1 });
-          break;
+          return;
         }
 
+        const instruction = this.memory.read_instruction(this.pc);
         const control = {
-          busB: program[this.pc].slice(17, 21).split("").map(Number) as Bit[],
-          busC: program[this.pc].slice(8, 17).split("").map(Number) as Bit[],
-          instr: program[this.pc].slice(0, 8).split("").map(Number) as Bit[],
+          busB: instruction.slice(19, 23),
+          memory: instruction.slice(17, 19),
+          busC: instruction.slice(8, 17),
+          instr: instruction.slice(0, 8),
         };
 
         // decodifica qual registrador tem acesso ao barramento b
@@ -87,30 +92,41 @@ export default class Mic1VM {
         }
 
         // salva a instrução no registrador de instrução
-        this.regs.IR.write(program[this.pc].split("").map(Number) as Bit[]);
+        this.regs.IR.write(instruction);
 
         const instr = this.parseInstruction(control.instr);
 
         const { S, CO, N, SD, Z } = this.ula.exec(instr, A, B);
 
         // pegar os registradores habilitados
-        const busCRegisters = this.getBusCRegisters(program);
+        const busCRegisters = this.getBusCRegisters(control.busC);
 
         // escreve os registradores habilitados
         for (const register of busCRegisters) {
           register.write(SD);
         }
 
+        const memo: Memo = {
+          X0: control.memory[0],
+          X1: control.memory[1],
+        };
+
+        console.log(memo);
+
+        await this.memory.exec(memo, this.regs);
+
         const logData: LogData = {
           cycle: this.pc + 1,
           before_regs: regsBefore,
           after_regs: this.getRegistersValue(),
+          after_memory: this.memory.get_memory_state(),
           b_bus: busBRegisterIndex === BusBRegisters.MBRU ? "MBRU" : BRegister.getLabel(),
           c_bus: busCRegisters.map((reg) => reg.getLabel()),
           ir: {
             ula_control: control.instr,
             bus_c_control: control.busC,
             bus_b_control: control.busB,
+            memory_control: control.memory,
           },
         };
 
@@ -140,10 +156,8 @@ export default class Mic1VM {
     };
   }
 
-  private getBusCRegisters(program: string[]): Register[] {
-    const busCControl = program[this.pc].slice(8, 17).split("").map(Number) as Bit[];
-
-    const indexes = this.selector.exec(busCControl);
+  private getBusCRegisters(control: Bit[]): Register[] {
+    const indexes = this.selector.exec(control);
 
     const registers: Register[] = [];
 

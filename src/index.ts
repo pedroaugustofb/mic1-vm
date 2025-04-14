@@ -1,13 +1,8 @@
 import * as fs from "fs";
 import Mic1VM from "./classes/vm";
 
-enum Etapa {
-  ETAPA1 = 1,
-  ETAPA2 = 2,
-  ETAPA3 = 3,
-}
 
-const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2-1.txt", "./test/programa_etapa2-2.txt"];
+const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2-1.txt", "./test/programa_etapa2-2.txt", "./test/programa_etapa3-1.txt"];
 
 function main() {
   // deve vir como flag na linha de comando
@@ -18,8 +13,10 @@ function main() {
     return;
   }
 
-  if (!Object.values(Etapa).includes(Number(etapa))) {
-    console.error("Etapa inválida");
+  const file_path = files[Number(etapa) - 1];
+
+  if (!file_path) {
+    console.error("Arquivo de entrada inválido");
     return;
   }
 
@@ -30,8 +27,6 @@ function main() {
   fs.writeFileSync("log.txt", "");
   console.log(`-> Limpando arquivo de log...`);
   console.log(`-> Executando programa...`);
-
-  const file_path = files[Number(etapa) - 1];
 
   const program = fs
     .readFileSync(file_path, "utf-8")

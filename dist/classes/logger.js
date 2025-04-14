@@ -37,18 +37,25 @@ exports.Logger = void 0;
 const fs = __importStar(require("fs"));
 class Logger {
     constructor() {
-        this.file = fs.createWriteStream("log.txt", { flags: "a" });
+        this.file = fs.createWriteStream("log.txt", { flags: "a" }).on("error", (err) => {
+            console.error("Error writing to log file:", err);
+        });
     }
     log(data) {
         this.file.write(`=========================\n`);
         this.file.write(`Cycle: ${data.cycle}\n`);
-        this.file.write(`IR: ${data.ir.ula_control.join("")} ${data.ir.bus_c_control.join("")} ${data.ir.bus_b_control.join("")}\n\n`);
+        this.file.write(`IR: ${data.ir.ula_control.join("")} ${data.ir.bus_c_control.join("")} ${data.ir.memory_control.join("")} ${data.ir.bus_b_control.join("")}\n\n`);
         this.file.write(`Bus B: ${data.b_bus}\n`);
         this.file.write(`Bus C: ${data.c_bus.join(", ")}\n\n`);
         this.file.write(`> Registers before instruction:\n`);
         this.logRegisters(data.before_regs);
         this.file.write(`> Registers after instruction:\n`);
         this.logRegisters(data.after_regs);
+        this.file.write(`> Memory after instruction:\n`);
+        this.logMemory(data.after_memory);
+    }
+    logMemory(lines) {
+        lines.forEach((line) => this.file.write(`${line}\n`));
     }
     logRegisters(regs) {
         this.file.write(`MAR: ${regs.MAR.join("")}\n`);

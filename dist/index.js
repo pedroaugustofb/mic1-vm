@@ -38,13 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(require("fs"));
 const vm_1 = __importDefault(require("./classes/vm"));
-var Etapa;
-(function (Etapa) {
-    Etapa[Etapa["ETAPA1"] = 1] = "ETAPA1";
-    Etapa[Etapa["ETAPA2"] = 2] = "ETAPA2";
-    Etapa[Etapa["ETAPA3"] = 3] = "ETAPA3";
-})(Etapa || (Etapa = {}));
-const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2-1.txt", "./test/programa_etapa2-2.txt"];
+const files = ["./test/programa_etapa1.txt", "./test/programa_etapa2-1.txt", "./test/programa_etapa2-2.txt", "./test/programa_etapa3-1.txt"];
 function main() {
     // deve vir como flag na linha de comando
     const etapa = process.argv[2];
@@ -52,8 +46,9 @@ function main() {
         console.error("Etapa não informada");
         return;
     }
-    if (!Object.values(Etapa).includes(Number(etapa))) {
-        console.error("Etapa inválida");
+    const file_path = files[Number(etapa) - 1];
+    if (!file_path) {
+        console.error("Arquivo de entrada inválido");
         return;
     }
     console.log(`-> Iniciando Virtual Machine...`);
@@ -62,7 +57,6 @@ function main() {
     fs.writeFileSync("log.txt", "");
     console.log(`-> Limpando arquivo de log...`);
     console.log(`-> Executando programa...`);
-    const file_path = files[Number(etapa) - 1];
     const program = fs
         .readFileSync(file_path, "utf-8")
         .split("\n")

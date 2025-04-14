@@ -4,6 +4,7 @@ const busBRegisters_1 = require("../types/busBRegisters");
 const responseUlaRegisters_1 = require("../types/responseUlaRegisters");
 const decoder_1 = require("./decoder");
 const logger_1 = require("./logger");
+const memory_1 = require("./memory");
 const register_1 = require("./register");
 const selector_1 = require("./selector");
 const ula_1 = require("./ula");
@@ -13,26 +14,27 @@ class Mic1VM {
         this.ula = new ula_1.ULA32();
         this.decoder = new decoder_1.Decoder4();
         this.selector = new selector_1.Selector9();
+        this.memory = new memory_1.Memory();
         this.regs = {
-            IR: new register_1.Register(21, "IR"), // Instruction Register
-            H: new register_1.Register(32, "H", Array(31).fill(0).concat([1]) // Hold Register
-            ),
+            IR: new register_1.Register(23, "IR"), // Instruction Register
+            H: new register_1.Register(32, "H"), // Hold Register
             OPC: new register_1.Register(32, "OPC"), // Old Program Counter Register
-            TOS: new register_1.Register(32, "TOS", Array(30).fill(0).concat([1, 0]) // Top of Stack Register
-            ),
+            TOS: new register_1.Register(32, "TOS"), // Top of Stack Register
             CPP: new register_1.Register(32, "CPP"), // Constant Pool Pointer Register
             LV: new register_1.Register(32, "LV"), // Local Variable Register
-            SP: new register_1.Register(32, "SP"), // Stack Pointer Register
+            SP: new register_1.Register(32, "SP", "00000000000000000000000000000100".split("").map((bit) => parseInt(bit))), // Stack Pointer Register
             PC: new register_1.Register(32, "PC"), // Program Counter Register
             MDR: new register_1.Register(32, "MDR"), // Memory Data Register
-            MAR: new register_1.Register(32, "MAR"), // Memory Address Register
-            MBR: new register_1.Register(8, "MBR", [1, ...Array(6).fill(0), 1] // Memory Buffer Register
-            ), // Memory Buffer Register
+            MAR: new register_1.Register(32, "MAR", "00000000000000000000000000000100".split("").map((bit) => parseInt(bit))), // Memory Address Register
+            MBR: new register_1.Register(8, "MBR"), // Memory Buffer Register
         };
         this.logger = new logger_1.Logger();
     }
-    run(program) {
+    async run(program) {
+        await this.memory.setup(program);
         this.logger.freeLog("=====================================================");
+        this.logger.freeLog("> Initial memory states");
+        this.logger.logMemory(this.memory.get_memory_state());
         this.logger.freeLog("> Initial register states");
         this.logger.logRegisters(this.getRegistersValue());
         this.logger.freeLog("=====================================================");
@@ -47,12 +49,14 @@ class Mic1VM {
                 // verifica se o PC está dentro do tamanho do programa
                 if (this.pc >= program.length) {
                     this.logger.empty({ PC: this.pc + 1 });
-                    break;
+                    return;
                 }
+                const instruction = this.memory.read_instruction(this.pc);
                 const control = {
-                    busB: program[this.pc].slice(17, 21).split("").map(Number),
-                    busC: program[this.pc].slice(8, 17).split("").map(Number),
-                    instr: program[this.pc].slice(0, 8).split("").map(Number),
+                    busB: instruction.slice(19, 23),
+                    memory: instruction.slice(17, 19),
+                    busC: instruction.slice(8, 17),
+                    instr: instruction.slice(0, 8),
                 };
                 // decodifica qual registrador tem acesso ao barramento b
                 const busBRegisterIndex = this.decoder.exec(control.busB);
@@ -66,25 +70,34 @@ class Mic1VM {
                     B = [...B, ...Array(24).fill(0)];
                 }
                 // salva a instrução no registrador de instrução
-                this.regs.IR.write(program[this.pc].split("").map(Number));
+                this.regs.IR.write(instruction);
                 const instr = this.parseInstruction(control.instr);
                 const { S, CO, N, SD, Z } = this.ula.exec(instr, A, B);
                 // pegar os registradores habilitados
-                const busCRegisters = this.getBusCRegisters(program);
+                const busCRegisters = this.getBusCRegisters(control.busC);
+                console.log(busCRegisters);
                 // escreve os registradores habilitados
                 for (const register of busCRegisters) {
                     register.write(SD);
                 }
+                const memo = {
+                    X0: control.memory[0],
+                    X1: control.memory[1],
+                };
+                console.log(memo);
+                await this.memory.exec(memo, this.regs);
                 const logData = {
                     cycle: this.pc + 1,
                     before_regs: regsBefore,
                     after_regs: this.getRegistersValue(),
+                    after_memory: this.memory.get_memory_state(),
                     b_bus: busBRegisterIndex === busBRegisters_1.BusBRegisters.MBRU ? "MBRU" : BRegister.getLabel(),
                     c_bus: busCRegisters.map((reg) => reg.getLabel()),
                     ir: {
                         ula_control: control.instr,
                         bus_c_control: control.busC,
                         bus_b_control: control.busB,
+                        memory_control: control.memory,
                     },
                 };
                 this.logger.log(logData);
@@ -112,9 +125,8 @@ class Mic1VM {
             H: this.regs.H.read(),
         };
     }
-    getBusCRegisters(program) {
-        const busCControl = program[this.pc].slice(8, 17).split("").map(Number);
-        const indexes = this.selector.exec(busCControl);
+    getBusCRegisters(control) {
+        const indexes = this.selector.exec(control);
         const registers = [];
         for (const index of indexes) {
             switch (index) {

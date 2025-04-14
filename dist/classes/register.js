@@ -22,7 +22,7 @@ class Register {
     }
     write(newValue) {
         if (newValue.length !== this.value.length) {
-            throw new Error("invalid register value size");
+            throw new Error(`invalid register value size ${this.value.length} != ${newValue.length}, ${this.label}`);
         }
         this.value = [...newValue];
     }

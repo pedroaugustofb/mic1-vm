@@ -19,22 +19,28 @@ export type LogData = {
   cycle: number;
   before_regs: LogRegs;
   after_regs: LogRegs;
+  after_memory: string[];
   b_bus: string;
   c_bus: string[];
   ir: {
     ula_control: Bit[];
     bus_c_control: Bit[];
     bus_b_control: Bit[];
+    memory_control: Bit[];
   };
 };
 
 export class Logger {
-  private file = fs.createWriteStream("log.txt", { flags: "a" });
+  private file = fs.createWriteStream("log.txt", { flags: "a" }).on("error", (err) => {
+    console.error("Error writing to log file:", err);
+  });
 
   log(data: LogData) {
     this.file.write(`=========================\n`);
     this.file.write(`Cycle: ${data.cycle}\n`);
-    this.file.write(`IR: ${data.ir.ula_control.join("")} ${data.ir.bus_c_control.join("")} ${data.ir.bus_b_control.join("")}\n\n`);
+    this.file.write(
+      `IR: ${data.ir.ula_control.join("")} ${data.ir.bus_c_control.join("")} ${data.ir.memory_control.join("")} ${data.ir.bus_b_control.join("")}\n\n`
+    );
 
     this.file.write(`Bus B: ${data.b_bus}\n`);
     this.file.write(`Bus C: ${data.c_bus.join(", ")}\n\n`);
@@ -44,6 +50,13 @@ export class Logger {
 
     this.file.write(`> Registers after instruction:\n`);
     this.logRegisters(data.after_regs);
+
+    this.file.write(`> Memory after instruction:\n`);
+    this.logMemory(data.after_memory);
+  }
+
+  logMemory(lines: string[]) {
+    lines.forEach((line) => this.file.write(`${line}\n`));
   }
 
   logRegisters(regs: LogRegs) {
